@@ -86,7 +86,7 @@ namespace BuildPoints
         private static readonly string[] FieldLabels =
         {
             "Base accrual (BP / day)",
-            "Facility level bonus (%/level)",
+            "Facility bonus per upgrade (%)",
             "Base storage cap (BP)",
             "Constant cost per launch (BP)",
             "Cost per unit of vessel funds cost",
@@ -576,15 +576,15 @@ namespace BuildPoints
             TableRow(false, "Max BP",
                 s.capacity.ToString("0.##"),
                 "+" + scenario.CapacityUpgrade.ToString("0.##"),
-                "-",
+                "+" + facilityBonusPercent.ToString("0.#") + "%",
                 scenario.GetCapacity().ToString("0.##"));
 
-            BuildPointsScenario.GetFacilityLevels(out float vabLevel, out float sphLevel);
+            BuildPointsScenario.GetFacilityUpgradeCounts(out int vabUpgrades, out int sphUpgrades);
             GUILayout.Space(2);
             GUILayout.Label(
-                $"VAB bonus: +{vabLevel * s.facilityLevelBonusPercent:0.#}%   " +
-                $"SPH bonus: +{sphLevel * s.facilityLevelBonusPercent:0.#}%   (the higher one applies)");
-            GUILayout.Label("Total accrual = (Base + Purchased) x (1 + VAB/SPH bonus).");
+                $"VAB bonus: +{vabUpgrades * s.facilityLevelBonusPercent:0.#}%   " +
+                $"SPH bonus: +{sphUpgrades * s.facilityLevelBonusPercent:0.#}%   (they add together)");
+            GUILayout.Label("Totals = (Base + Purchased) x (1 + VAB bonus + SPH bonus), for both accrual and max BP.");
 
             GUILayout.Space(8);
 

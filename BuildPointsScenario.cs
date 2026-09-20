@@ -17,10 +17,13 @@ namespace BuildPoints
     ///
     /// Settings.baseAccrualPerDay and Settings.capacity are BASE values. The
     /// upgrades the player buys with funds/science (BuildPointsUpgrades) are
-    /// kept here, saved alongside the balance, and added on top:
+    /// kept here, saved alongside the balance, and added on top. Both totals
+    /// are then scaled by the VAB/SPH facility bonus, which is additive:
+    /// every upgrade of either facility adds facilityLevelBonusPercent.
     ///   accrual/day = (baseAccrualPerDay + RateUpgradePerDay)
     ///                 * (1 + VAB/SPH facility bonus)
-    ///   max BP      = capacity + CapacityUpgrade
+    ///   max BP      = (capacity + CapacityUpgrade)
+    ///                 * (1 + VAB/SPH facility bonus)
     /// They are stored as BP amounts rather than prices paid, so editing the
     /// upgrade prices later never changes what's already been bought.
     ///
@@ -45,7 +48,7 @@ namespace BuildPoints
         /// Saved top-left position of the on-screen Build Points window, in screen
         /// pixels. Stored in this save's persistent file alongside the balance.
         /// </summary>
-        public float DisplayX { get; private set; } = 500f;
+        public float DisplayX { get; private set; } = 600f;
         public float DisplayY { get; private set; } = 8f;
 
         public void SetDisplayPosition(float x, float y)
@@ -127,16 +130,16 @@ namespace BuildPoints
             var game = HighLogic.CurrentGame;
             if (game == null) return false;
 
-			switch (game.Mode)
-			{
-				case Game.Modes.CAREER:
-				case Game.Modes.SCIENCE_SANDBOX:
-				case Game.Modes.SANDBOX:
-					return true;
-				default:
-					return false;
-			}
-		}
+            switch (game.Mode)
+            {
+                case Game.Modes.CAREER:
+                case Game.Modes.SCIENCE_SANDBOX:
+                case Game.Modes.SANDBOX:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Returns the settings to use right now: this save's own copy if
@@ -197,24 +200,38 @@ namespace BuildPoints
         }
 
         /// <summary>
-        /// VAB and SPH upgrade levels, each 0..1 normalized by stock KSP.
+        /// Number of upgrades bought for the VAB and the SPH (0 = base
+        /// level). Stock KSP reports facility level normalized to 0..1, so
+        /// it's multiplied back out by the facility's level count to get
+        /// whole upgrade steps.
+        ///
+        /// NOTE: verify ScenarioUpgradeableFacilities.GetFacilityLevelCount(SpaceCenterFacility)
+        /// against 1.12.5 — it should return the facility's max level index
+        /// (2 for a stock 3-tier building).
         /// </summary>
-        public static void GetFacilityLevels(out float vabLevel, out float sphLevel)
+        public static void GetFacilityUpgradeCounts(out int vabUpgrades, out int sphUpgrades)
         {
-            vabLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.VehicleAssemblyBuilding);
-            sphLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.SpaceplaneHangar);
+            vabUpgrades = GetUpgradeCount(SpaceCenterFacility.VehicleAssemblyBuilding);
+            sphUpgrades = GetUpgradeCount(SpaceCenterFacility.SpaceplaneHangar);
+        }
+
+        private static int GetUpgradeCount(SpaceCenterFacility facility)
+        {
+            float normalized = ScenarioUpgradeableFacilities.GetFacilityLevel(facility); // 0f..1f
+            int maxLevel = Mathf.Max(0, ScenarioUpgradeableFacilities.GetFacilityLevelCount(facility));
+            return Mathf.RoundToInt(normalized * maxLevel);
         }
 
         /// <summary>
-        /// The accrual bonus from the VAB/SPH as a fraction (0.5 = +50%).
-        /// We use whichever facility is more upgraded so players aren't
-        /// penalized for specializing in one build track.
+        /// The bonus from the VAB and SPH as a fraction (0.5 = +50%), applied
+        /// to both accrual and max storage. Additive: every upgrade of either
+        /// facility adds facilityLevelBonusPercent, so with the stock two
+        /// upgrades each, both fully upgraded gives four times it.
         /// </summary>
         public double GetFacilityBonusFraction()
         {
-            GetFacilityLevels(out float vabLevel, out float sphLevel);
-            float facilityLevel = Mathf.Max(vabLevel, sphLevel); // 0f..1f
-            return facilityLevel * (Settings.facilityLevelBonusPercent / 100.0);
+            GetFacilityUpgradeCounts(out int vabUpgrades, out int sphUpgrades);
+            return (vabUpgrades + sphUpgrades) * (Settings.facilityLevelBonusPercent / 100.0);
         }
 
         /// <summary>Base accrual plus purchased upgrades, before the facility bonus (BP/day).</summary>
@@ -278,8 +295,14 @@ namespace BuildPoints
             return true;
         }
 
-        /// <summary>Max storage: this save's base capacity plus purchased upgrades.</summary>
-        public double GetCapacity() => Settings.capacity + CapacityUpgrade;
+        /// <summary>Base capacity plus purchased upgrades, before the facility bonus.</summary>
+        public double GetCapacityBeforeFacility() => Settings.capacity + CapacityUpgrade;
+
+        /// <summary>
+        /// Max storage, everything included:
+        /// (base + purchased) x (1 + VAB/SPH bonus), same as accrual.
+        /// </summary>
+        public double GetCapacity() => GetCapacityBeforeFacility() * (1.0 + GetFacilityBonusFraction());
 
         /// <summary>
         /// Seconds of (in-game) time needed before CurrentPoints would reach
@@ -426,9 +449,12 @@ namespace BuildPoints
 
             // After a revert to the VAB/SPH the game reloads a snapshot that already
             // has the launch charged. Put the balance back to what it was before it.
+            // No capacity clamp here: the balance was already valid before the launch,
+            // and capacity now depends on facility levels, which may not be loaded yet
+            // when this scenario's OnLoad runs.
             if (LaunchRevertTracker.TryConsumeRevertRestore(out double restoredPoints))
             {
-                CurrentPoints = Math.Min(restoredPoints, GetCapacity());
+                CurrentPoints = restoredPoints;
                 Debug.Log($"[BuildPoints] Revert to editor: balance restored to {CurrentPoints:0.0} BP");
             }
         }
