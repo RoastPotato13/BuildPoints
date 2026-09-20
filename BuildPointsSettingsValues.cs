@@ -44,6 +44,12 @@ namespace BuildPoints
         public float massCostWeight = 0.2f;
         public float minimumCraftCost = 1f;
 
+        // true  = the vessel funds cost and mass in the formula above include
+        //         fuel/resources.
+        // false = dry cost and dry mass only (fuel/resources are ignored).
+        // Applies to both the launch charge and the recovery refund.
+        public bool includeFuelInCost = false;
+
         // --- Recovery ---
         public float recoveryRefundPercent = 50f;
 
@@ -75,6 +81,7 @@ namespace BuildPoints
             costPerPart = other.costPerPart;
             massCostWeight = other.massCostWeight;
             minimumCraftCost = other.minimumCraftCost;
+            includeFuelInCost = other.includeFuelInCost;
             recoveryRefundPercent = other.recoveryRefundPercent;
             useInstantTimeSkip = other.useInstantTimeSkip;
             showBuildPointsDisplay = other.showBuildPointsDisplay;
@@ -95,6 +102,7 @@ namespace BuildPoints
             ReadFloat(node, "costPerPart", ref costPerPart);
             ReadFloat(node, "massCostWeight", ref massCostWeight);
             ReadFloat(node, "minimumCraftCost", ref minimumCraftCost);
+            ReadBool(node, "includeFuelInCost", ref includeFuelInCost);
             ReadFloat(node, "recoveryRefundPercent", ref recoveryRefundPercent);
             ReadBool(node, "useInstantTimeSkip", ref useInstantTimeSkip);
             ReadBool(node, "showBuildPointsDisplay", ref showBuildPointsDisplay);
@@ -118,6 +126,7 @@ namespace BuildPoints
             node.AddValue("costPerPart", costPerPart);
             node.AddValue("massCostWeight", massCostWeight);
             node.AddValue("minimumCraftCost", minimumCraftCost);
+            node.AddValue("includeFuelInCost", includeFuelInCost);
             node.AddValue("recoveryRefundPercent", recoveryRefundPercent);
             node.AddValue("useInstantTimeSkip", useInstantTimeSkip);
             node.AddValue("showBuildPointsDisplay", showBuildPointsDisplay);

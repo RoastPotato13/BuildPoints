@@ -6,7 +6,8 @@ namespace BuildPoints
 	/// Breakdown of a vessel's Build Points cost by component, so UI (the
 	/// VAB/SPH toolbar window) can show each contributor separately instead
 	/// of just the total. fundsCost/massTonnes are the vessel's raw funds
-	/// cost and mass (not yet converted to BP) — useful for display.
+	/// cost and mass (not yet converted to BP) — useful for display. Whether
+	/// they include fuel/resources depends on Settings.includeFuelInCost.
 	/// </summary>
 	public struct BuildPointsCostBreakdown
 	{
@@ -14,8 +15,8 @@ namespace BuildPoints
 		public double funds;          // BP, from fundsCost * fundsCostWeight
 		public double partCountCost;  // BP, from partCount * costPerPart
 		public double mass;           // BP, from massTonnes * massCostWeight
-		public double fundsCost;      // raw vessel funds cost (dry + resources)
-		public double massTonnes;     // raw vessel mass (dry + resources)
+		public double fundsCost;      // raw vessel funds cost (dry, plus resources if included)
+		public double massTonnes;     // raw vessel mass (dry, plus resources if included)
 		public int partCount;
 		public double total;          // sum of the four BP components, floored at minimumCraftCost
 	}
@@ -28,7 +29,8 @@ namespace BuildPoints
 	/// out of sync with each other. Both also read this save's settings
 	/// via BuildPointsScenario.GetActiveSettings() rather than the global
 	/// defaults, so the cost formula respects whatever the player set for
-	/// this game.
+	/// this game (including whether fuel/resources are counted, see
+	/// Settings.includeFuelInCost).
 	/// </summary>
 	public static class BuildPointsCalculator
 	{
@@ -69,11 +71,12 @@ namespace BuildPoints
 				availableParts.Add(part.partInfo);
 			}
 
-			SumPartCostsAndMass(availableParts, out double fundsCost, out double massTonnes);
+			var settings = BuildPointsScenario.GetActiveSettings();
+			SumPartCostsAndMass(availableParts, settings.includeFuelInCost, out double fundsCost, out double massTonnes);
 
 			// In TryGetShipCostBreakdown (launch / editor):
-			breakdown = BuildBreakdown(BuildPointsScenario.GetActiveSettings(), fundsCost, partCount, massTonnes,
-			chargeLaunchOverhead: true);
+			breakdown = BuildBreakdown(settings, fundsCost, partCount, massTonnes,
+				chargeLaunchOverhead: true);
 			return true;
 		}
 
@@ -87,7 +90,9 @@ namespace BuildPoints
 		/// than that part's actual persisted resource levels — so it's
 		/// consistent with the launch charge, but inherits the same
 		/// "ignores partial fuel" simplification already flagged for
-		/// GetPartCostsAndMass in the README.
+		/// GetPartCostsAndMass in the README. (When fuel is excluded via
+		/// Settings.includeFuelInCost this simplification doesn't matter,
+		/// since resources aren't counted either way.)
 		///
 		/// NOTE: verify ProtoPartSnapshot.partInfo against your KSP
 		/// version — it should be the same AvailablePart reference the
@@ -113,10 +118,11 @@ namespace BuildPoints
 			}
 			if (availableParts.Count == 0) return false;
 
-			SumPartCostsAndMass(availableParts, out fundsCost, out double massTonnes);
+			var settings = BuildPointsScenario.GetActiveSettings();
+			SumPartCostsAndMass(availableParts, settings.includeFuelInCost, out fundsCost, out double massTonnes);
 
 			// In TryGetRecoveredVesselCost (recovery):
-			var breakdown = BuildBreakdown(BuildPointsScenario.GetActiveSettings(), fundsCost, partCount, massTonnes,
+			var breakdown = BuildBreakdown(settings, fundsCost, partCount, massTonnes,
 				chargeLaunchOverhead: false);
 			bpCost = breakdown.total;
 			return true;
@@ -164,7 +170,13 @@ namespace BuildPoints
 		// ShipConstruct/ProtoVessel) — so sum it across every part to get
 		// ship-wide totals. Shared by the editor and recovery paths, since
 		// both ultimately hand it one AvailablePart per part.
-		private static void SumPartCostsAndMass(List<AvailablePart> availableParts, out double fundsCost, out double massTonnes)
+		//
+		// includeFuel = false drops the resource portion of each part's cost
+		// and mass, leaving dry cost and dry mass only. The stock helper's
+		// "fuel" figures cover every part resource (monoprop, xenon, ore, etc.),
+		// not just liquid fuel and oxidizer.
+		private static void SumPartCostsAndMass(List<AvailablePart> availableParts, bool includeFuel,
+			out double fundsCost, out double massTonnes)
 		{
 			float totalDryCost = 0f, totalFuelCost = 0f, totalDryMass = 0f, totalFuelMass = 0f;
 			foreach (AvailablePart ap in availableParts)
@@ -172,9 +184,12 @@ namespace BuildPoints
 				ShipConstruction.GetPartCostsAndMass(ap.partConfig, ap,
 					out float dryCost, out float fuelCost, out float dryMass, out float fuelMass);
 				totalDryCost += dryCost;
-				totalFuelCost += fuelCost;
 				totalDryMass += dryMass;
-				totalFuelMass += fuelMass;
+				if (includeFuel)
+				{
+					totalFuelCost += fuelCost;
+					totalFuelMass += fuelMass;
+				}
 			}
 			fundsCost = totalDryCost + totalFuelCost;
 			massTonnes = totalDryMass + totalFuelMass;

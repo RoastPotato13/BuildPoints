@@ -82,6 +82,7 @@ namespace BuildPoints
         private string[] textFields;
         private bool pendingShowDisplay;
         private bool pendingInstantSkip;
+        private bool pendingIncludeFuel;
 
         private static readonly string[] FieldLabels =
         {
@@ -316,6 +317,7 @@ namespace BuildPoints
             };
             pendingShowDisplay = s.showBuildPointsDisplay;
             pendingInstantSkip = s.useInstantTimeSkip;
+            pendingIncludeFuel = s.includeFuelInCost;
         }
 
         /// <summary>
@@ -423,6 +425,8 @@ namespace BuildPoints
             }
 
             GUILayout.Space(4);
+            pendingIncludeFuel = GUILayout.Toggle(pendingIncludeFuel,
+                "Include fuel/resources in cost and mass (off = dry only)");
             pendingInstantSkip = GUILayout.Toggle(pendingInstantSkip,
                 "Use instant time-skip (off = real TimeWarp)");
 
@@ -464,6 +468,7 @@ namespace BuildPoints
             s.sciencePerCapacityIncrease = ParseOrKeep(textFields[12], s.sciencePerCapacityIncrease);
             s.showBuildPointsDisplay = pendingShowDisplay;
             s.useInstantTimeSkip = pendingInstantSkip;
+            s.includeFuelInCost = pendingIncludeFuel;
 
             SaveToPersistentFile();
 
@@ -702,6 +707,8 @@ namespace BuildPoints
                 GUILayout.Label($"Funds cost:  {b.funds,8:0.0} BP   ({b.fundsCost:0} funds)");
                 GUILayout.Label($"Part count:  {b.partCountCost,8:0.0} BP   ({b.partCount} parts)");
                 GUILayout.Label($"Mass:        {b.mass,8:0.0} BP   ({b.massTonnes:0.00} t)");
+                if (!BuildPointsScenario.GetActiveSettings().includeFuelInCost)
+                    GUILayout.Label("(fuel excluded: dry cost and mass only)");
                 GUILayout.Space(4);
                 GUILayout.Label($"Total cost:  {b.total,8:0.0} BP");
 
