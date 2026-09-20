@@ -1,0 +1,90 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>BuildPoints</AssemblyName>
+    <RootNamespace>BuildPoints</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+
+    <!--
+      SDK-style projects auto-generate their own AssemblyInfo (title,
+      version, etc.) unless told not to. We write that by hand in
+      Properties/AssemblyInfo.cs instead, so the two don't collide.
+    -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!--
+      Point this at your local KSP install, e.g.:
+        C:\Games\Kerbal Space Program
+      or set the KSP_ROOT environment variable instead of editing here
+      (if you use the environment variable, fully restart Visual Studio
+      after setting it — VS reads env vars once at launch).
+    -->
+    <KSPRoot Condition="'$(KSPRoot)' == ''">$(KSP_ROOT)</KSPRoot>
+    <KSPManaged>$(KSPRoot)\KSP_x64_Data\Managed</KSPManaged>
+    <KSPHarmonyDll>$(KSPRoot)\GameData\000_Harmony\0Harmony.dll</KSPHarmonyDll>
+
+    <!-- Build straight into GameData so you can launch KSP right after building. -->
+    <OutputPath>..\..\GameData\BuildPoints\Plugins\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!--
+    Fails the build early with one clear message instead of dozens of
+    "type or namespace could not be found" errors when KSPRoot (or the
+    separately-installed Harmony mod) isn't set up right.
+  -->
+  <Target Name="BuildPointsCheckPaths" BeforeTargets="BeforeBuild;BeforeCompile;CoreCompile">
+    <Error Condition="'$(KSPRoot)' == '' OR !Exists('$(KSPManaged)\Assembly-CSharp.dll')"
+           Text="KSPRoot isn't pointing at a valid KSP install (looked for '$(KSPManaged)\Assembly-CSharp.dll'). Set the KSPRoot property in this .csproj, or the KSP_ROOT environment variable (then fully restart Visual Studio), to your KSP folder — the one containing KSP_x64_Data." />
+    <Error Condition="!Exists('$(KSPHarmonyDll)')"
+           Text="Couldn't find 0Harmony.dll at '$(KSPHarmonyDll)'. Install the 'Harmony2' mod (CKAN, or manually) into your KSP GameData, or if it's already installed under a different folder name, update KSPHarmonyDll in this .csproj to match." />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(KSPManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(KSPManaged)\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(KSPManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(KSPManaged)\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(KSPManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(KSPManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(KSPManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(KSPManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!--
+      0Harmony.dll: install the "Harmony2" mod (via CKAN or manually) into
+      your KSP GameData so other mods can rely on it too, then point this
+      at that copy — don't ship a duplicate.
+    -->
+    <Reference Include="0Harmony">
+      <HintPath>$(KSPHarmonyDll)</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
