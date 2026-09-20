@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace BuildPoints
 {
 	/// <summary>
@@ -25,12 +23,24 @@ namespace BuildPoints
 	/// Computes the Build Points cost of a vessel — either the one
 	/// currently in the editor (charged on launch) or a just-recovered
 	/// one (refunded on recovery). Both paths share the same cost
-	/// formula and the same part-summing helper so they can never drift
-	/// out of sync with each other. Both also read this save's settings
-	/// via BuildPointsScenario.GetActiveSettings() rather than the global
+	/// formula (BuildBreakdown) so they can never drift out of sync with
+	/// each other. Both also read this save's settings via
+	/// BuildPointsScenario.GetActiveSettings() rather than the global
 	/// defaults, so the cost formula respects whatever the player set for
 	/// this game (including whether fuel/resources are counted, see
 	/// Settings.includeFuelInCost).
+	///
+	/// Where the raw funds cost and mass come from:
+	///   Launch   — the live ship in the editor (ShipConstruct.GetShipCosts /
+	///              GetShipMass), the same totals the stock editor readouts
+	///              use. That means tweaked tank levels, part variants and
+	///              module cost/mass modifiers are all reflected, and the
+	///              cost window updates as the player changes resources.
+	///   Recovery — each ProtoPartSnapshot: the part's dry cost and mass come
+	///              from its AvailablePart template, and (only when
+	///              includeFuelInCost is on) its resources are added at the
+	///              amounts the vessel actually came back with. Part variants
+	///              and module modifiers are NOT captured on this path.
 	/// </summary>
 	public static class BuildPointsCalculator
 	{
@@ -52,6 +62,11 @@ namespace BuildPoints
 		/// Same as TryGetCurrentShipCost, but returns every component of
 		/// the cost formula separately (used by the VAB/SPH "Build Points
 		/// Cost" toolbar window).
+		///
+		/// Uses the stock two-argument ShipConstruct.GetShipCosts and
+		/// GetShipMass (each passes a null crew manifest). "fuel" in both means
+		/// every part resource, not just liquid fuel and oxidizer. Launch clamps
+		/// are counted like any other part.
 		/// </summary>
 		public static bool TryGetShipCostBreakdown(out BuildPointsCostBreakdown breakdown)
 		{
@@ -64,15 +79,18 @@ namespace BuildPoints
 			int partCount = ship.parts.Count;
 			if (partCount == 0) return false;
 
-			var availableParts = new List<AvailablePart>(partCount);
-			foreach (Part part in ship.parts)
-			{
-				if (part.partInfo == null) continue; // defensive: shouldn't happen for a placed part
-				availableParts.Add(part.partInfo);
-			}
-
 			var settings = BuildPointsScenario.GetActiveSettings();
-			SumPartCostsAndMass(availableParts, settings.includeFuelInCost, out double fundsCost, out double massTonnes);
+
+			// Live cost totals, split into dry and resource ("fuel") portions.
+			ship.GetShipCosts(out float dryCost, out float fuelCost);
+
+			// Live mass, the same totals the stock editor uses. The two-argument
+			// overloads pass a null crew manifest, so kerbal mass and crew
+			// inventory are not included (only what's built into the craft).
+			ship.GetShipMass(out float dryMass, out float fuelMass);
+
+			double fundsCost = dryCost + (settings.includeFuelInCost ? fuelCost : 0f);
+			double massTonnes = dryMass + (settings.includeFuelInCost ? fuelMass : 0f);
 
 			// In TryGetShipCostBreakdown (launch / editor):
 			breakdown = BuildBreakdown(settings, fundsCost, partCount, massTonnes,
@@ -84,20 +102,23 @@ namespace BuildPoints
 		/// Same per-part / per-funds / per-mass formula as TryGetCurrentShipCost,
 		/// but WITHOUT the constant per-launch cost or the minimum-cost floor,
 		/// applied to a recovered vessel's ProtoVessel rather than a live editor
-		/// ShipConstruct — used to size the Build Points refund on
-		/// recovery. Like the editor path, this sums cost/mass off each
-		/// part's AvailablePart template (partInfo.partConfig) rather
-		/// than that part's actual persisted resource levels — so it's
-		/// consistent with the launch charge, but inherits the same
-		/// "ignores partial fuel" simplification already flagged for
-		/// GetPartCostsAndMass in the README. (When fuel is excluded via
-		/// Settings.includeFuelInCost this simplification doesn't matter,
-		/// since resources aren't counted either way.)
+		/// ShipConstruct — used to size the Build Points refund on recovery.
 		///
-		/// NOTE: verify ProtoPartSnapshot.partInfo against your KSP
-		/// version — it should be the same AvailablePart reference the
-		/// live Part exposes, populated when the vessel is loaded/recovered.
-		/// A part whose mod was removed since launch will have this null;
+		/// Dry cost/mass come from each part's AvailablePart template
+		/// (partInfo.partConfig). If Settings.includeFuelInCost is on, each
+		/// part's resources are added at the amounts stored in the
+		/// ProtoPartSnapshot, so a vessel that comes back with empty tanks is
+		/// refunded for empty tanks, matching what launch charged for what was
+		/// actually loaded. Part variants and module cost/mass modifiers are not
+		/// captured here (the persisted snapshot isn't read for them), so a
+		/// variant surcharge is charged at launch but not refunded.
+		///
+		/// NOTE: verify against 1.12.5:
+		///   ProtoPartSnapshot.partInfo, ProtoPartSnapshot.resources
+		///   (List&lt;ProtoPartResourceSnapshot&gt; with resourceName and amount),
+		///   and PartResourceLibrary.Instance.GetDefinition(string) with
+		///   PartResourceDefinition.unitCost / density.
+		/// A part whose mod was removed since launch will have partInfo null;
 		/// such parts are skipped rather than failing the whole refund.
 		/// </summary>
 		public static bool TryGetRecoveredVesselCost(ProtoVessel protoVessel, out double bpCost, out double fundsCost, out int partCount)
@@ -110,19 +131,43 @@ namespace BuildPoints
 			partCount = protoVessel.protoPartSnapshots.Count;
 			if (partCount == 0) return false;
 
-			var availableParts = new List<AvailablePart>(partCount);
+			var settings = BuildPointsScenario.GetActiveSettings();
+
+			double totalCost = 0, totalMass = 0;
+			int counted = 0;
+
 			foreach (ProtoPartSnapshot pps in protoVessel.protoPartSnapshots)
 			{
 				if (pps?.partInfo == null) continue;
-				availableParts.Add(pps.partInfo);
-			}
-			if (availableParts.Count == 0) return false;
+				counted++;
 
-			var settings = BuildPointsScenario.GetActiveSettings();
-			SumPartCostsAndMass(availableParts, settings.includeFuelInCost, out fundsCost, out double massTonnes);
+				// Dry portion from the part's template.
+				ShipConstruction.GetPartCostsAndMass(pps.partInfo.partConfig, pps.partInfo,
+					out float dryCost, out _, out float dryMass, out _);
+				totalCost += dryCost;
+				totalMass += dryMass;
+
+				// Resources at the levels the vessel actually has now.
+				if (settings.includeFuelInCost && pps.resources != null)
+				{
+					foreach (ProtoPartResourceSnapshot res in pps.resources)
+					{
+						if (res == null) continue;
+						PartResourceDefinition def = PartResourceLibrary.Instance.GetDefinition(res.resourceName);
+						if (def == null) continue;
+
+						totalCost += res.amount * def.unitCost;
+						totalMass += res.amount * def.density;
+					}
+				}
+			}
+
+			if (counted == 0) return false;
+
+			fundsCost = totalCost;
 
 			// In TryGetRecoveredVesselCost (recovery):
-			var breakdown = BuildBreakdown(settings, fundsCost, partCount, massTonnes,
+			var breakdown = BuildBreakdown(settings, fundsCost, partCount, totalMass,
 				chargeLaunchOverhead: false);
 			bpCost = breakdown.total;
 			return true;
@@ -163,36 +208,6 @@ namespace BuildPoints
 				b.total = raw; // no floor on recovery
 
 			return b;
-		}
-
-		// Stock helper ShipConstruction.GetPartCostsAndMass is per-part, not
-		// per-ship (it takes a ConfigNode + AvailablePart, not a whole
-		// ShipConstruct/ProtoVessel) — so sum it across every part to get
-		// ship-wide totals. Shared by the editor and recovery paths, since
-		// both ultimately hand it one AvailablePart per part.
-		//
-		// includeFuel = false drops the resource portion of each part's cost
-		// and mass, leaving dry cost and dry mass only. The stock helper's
-		// "fuel" figures cover every part resource (monoprop, xenon, ore, etc.),
-		// not just liquid fuel and oxidizer.
-		private static void SumPartCostsAndMass(List<AvailablePart> availableParts, bool includeFuel,
-			out double fundsCost, out double massTonnes)
-		{
-			float totalDryCost = 0f, totalFuelCost = 0f, totalDryMass = 0f, totalFuelMass = 0f;
-			foreach (AvailablePart ap in availableParts)
-			{
-				ShipConstruction.GetPartCostsAndMass(ap.partConfig, ap,
-					out float dryCost, out float fuelCost, out float dryMass, out float fuelMass);
-				totalDryCost += dryCost;
-				totalDryMass += dryMass;
-				if (includeFuel)
-				{
-					totalFuelCost += fuelCost;
-					totalFuelMass += fuelMass;
-				}
-			}
-			fundsCost = totalDryCost + totalFuelCost;
-			massTonnes = totalDryMass + totalFuelMass;
 		}
 	}
 }
