@@ -55,6 +55,21 @@ namespace BuildPoints
         }
 
         /// <summary>
+        /// Saved top-left position of the Space Center toolbar window
+        /// (Settings / BuildPoint tabs), in screen pixels. Position only:
+        /// unlike the VAB/SPH cost windows, whether it was open is
+        /// deliberately not stored, so it always starts closed.
+        /// </summary>
+        public float SpaceCenterWindowX { get; private set; } = 300f;
+        public float SpaceCenterWindowY { get; private set; } = 100f;
+
+        public void SetSpaceCenterWindowPosition(float x, float y)
+        {
+            SpaceCenterWindowX = x;
+            SpaceCenterWindowY = y;
+        }
+
+        /// <summary>
         /// Position and open/closed state of the Build Points Cost window,
         /// tracked separately for the VAB and the SPH so each can sit in its
         /// own place and start open or closed on its own. Stored in this
@@ -375,6 +390,13 @@ namespace BuildPoints
             DisplayX = displayX;
             DisplayY = displayY;
 
+            // Space Center toolbar window position (position only; it always starts closed).
+            float scWindowX = SpaceCenterWindowX, scWindowY = SpaceCenterWindowY;
+            node.TryGetValue("spaceCenterWindowX", ref scWindowX);
+            node.TryGetValue("spaceCenterWindowY", ref scWindowY);
+            SpaceCenterWindowX = scWindowX;
+            SpaceCenterWindowY = scWindowY;
+
             // Per-editor cost window state (position + open/closed).
             ConfigNode vabNode = node.GetNode("VabCostWindow");
             if (vabNode != null) VabCostWindow.Load(vabNode);
@@ -405,6 +427,9 @@ namespace BuildPoints
 
             node.AddValue("displayX", DisplayX);
             node.AddValue("displayY", DisplayY);
+
+            node.AddValue("spaceCenterWindowX", SpaceCenterWindowX);
+            node.AddValue("spaceCenterWindowY", SpaceCenterWindowY);
 
             VabCostWindow.Save(node.AddNode("VabCostWindow"));
             SphCostWindow.Save(node.AddNode("SphCostWindow"));

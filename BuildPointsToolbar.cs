@@ -35,6 +35,10 @@ namespace BuildPoints
     /// with the game, and is restored when the button is added on entering
     /// the editor (see RestoreEditorWindowState).
     ///
+    /// The Space Center window remembers its position only (see
+    /// RestoreSpaceCenterWindowPosition); it always starts closed. The
+    /// position is stored in BuildPointsScenario (SpaceCenterWindowX/Y).
+    ///
     /// Button creation: rather than reacting to the launcher's "ready"
     /// event (which appeared to fire more than once in the editor and
     /// produced duplicate buttons), each instance waits for the launcher
@@ -166,6 +170,7 @@ namespace BuildPoints
             sharedButton = button;
 
             RestoreEditorWindowState();
+            RestoreSpaceCenterWindowPosition();
         }
 
         /// <summary>
@@ -188,6 +193,22 @@ namespace BuildPoints
                 showWindow = true;
                 button.SetTrue(false);
             }
+        }
+
+        /// <summary>
+        /// Puts the Space Center window back where the player last left it.
+        /// Only the position is restored; the window itself always starts
+        /// closed (showWindow stays false and the button isn't pressed).
+        /// </summary>
+        private void RestoreSpaceCenterWindowPosition()
+        {
+            if (HighLogic.LoadedScene != GameScenes.SPACECENTER) return;
+
+            var scenario = BuildPointsScenario.Instance;
+            if (scenario == null) return;
+
+            windowRect.x = scenario.SpaceCenterWindowX;
+            windowRect.y = scenario.SpaceCenterWindowY;
         }
 
         // NOTE: verify EditorDriver.editorFacility against 1.12.5 — it should be
@@ -313,6 +334,13 @@ namespace BuildPoints
             {
                 windowRect = GUILayout.Window(GetInstanceID(), windowRect, DrawSpaceCenterWindow,
                     "Build Points", GUILayout.Width(SpaceCenterWindowWidth));
+
+                // Keep it on screen (also covers a save made at a larger resolution).
+                windowRect.x = Mathf.Clamp(windowRect.x, 0f, Screen.width - windowRect.width);
+                windowRect.y = Mathf.Clamp(windowRect.y, 0f, Screen.height - windowRect.height);
+
+                // Remember where it is, so it comes back here next time.
+                BuildPointsScenario.Instance?.SetSpaceCenterWindowPosition(windowRect.x, windowRect.y);
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
