@@ -196,9 +196,10 @@ namespace BuildPoints
         }
 
         /// <summary>
-        /// Puts the Space Center window back where the player last left it.
-        /// Only the position is restored; the window itself always starts
-        /// closed (showWindow stays false and the button isn't pressed).
+        /// Puts the Space Center window back where the player last left it,
+        /// on the tab they last had selected. Only position and tab are
+        /// restored; the window itself always starts closed (showWindow stays
+        /// false and the button isn't pressed).
         /// </summary>
         private void RestoreSpaceCenterWindowPosition()
         {
@@ -209,6 +210,7 @@ namespace BuildPoints
 
             windowRect.x = scenario.SpaceCenterWindowX;
             windowRect.y = scenario.SpaceCenterWindowY;
+            selectedTab = Mathf.Clamp(scenario.SpaceCenterTab, 0, TabNames.Length - 1);
         }
 
         // NOTE: verify EditorDriver.editorFacility against 1.12.5 — it should be
@@ -367,7 +369,12 @@ namespace BuildPoints
         {
             GUILayout.BeginVertical();
 
-            selectedTab = GUILayout.Toolbar(selectedTab, TabNames);
+            int newTab = GUILayout.Toolbar(selectedTab, TabNames);
+            if (newTab != selectedTab)
+            {
+                selectedTab = newTab;
+                BuildPointsScenario.Instance?.SetSpaceCenterTab(newTab); // remembered for next time
+            }
             GUILayout.Space(6);
 
             if (selectedTab == 0) DrawSettingsTab();

@@ -70,6 +70,18 @@ namespace BuildPoints
         }
 
         /// <summary>
+        /// Which tab of the Space Center window was selected last
+        /// (0 = Settings, 1 = BuildPoint). Stored per save; a new save has
+        /// no stored value, so it starts on 0 (Settings).
+        /// </summary>
+        public int SpaceCenterTab { get; private set; }
+
+        public void SetSpaceCenterTab(int tab)
+        {
+            SpaceCenterTab = tab;
+        }
+
+        /// <summary>
         /// Position and open/closed state of the Build Points Cost window,
         /// tracked separately for the VAB and the SPH so each can sit in its
         /// own place and start open or closed on its own. Stored in this
@@ -397,6 +409,11 @@ namespace BuildPoints
             SpaceCenterWindowX = scWindowX;
             SpaceCenterWindowY = scWindowY;
 
+            // Last-selected Space Center tab. Missing in new saves, so it stays 0 (Settings).
+            int scTab = 0;
+            node.TryGetValue("spaceCenterTab", ref scTab);
+            SpaceCenterTab = Math.Max(0, scTab);
+
             // Per-editor cost window state (position + open/closed).
             ConfigNode vabNode = node.GetNode("VabCostWindow");
             if (vabNode != null) VabCostWindow.Load(vabNode);
@@ -430,6 +447,7 @@ namespace BuildPoints
 
             node.AddValue("spaceCenterWindowX", SpaceCenterWindowX);
             node.AddValue("spaceCenterWindowY", SpaceCenterWindowY);
+            node.AddValue("spaceCenterTab", SpaceCenterTab);
 
             VabCostWindow.Save(node.AddNode("VabCostWindow"));
             SphCostWindow.Save(node.AddNode("SphCostWindow"));
