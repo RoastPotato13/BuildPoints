@@ -45,7 +45,7 @@ namespace BuildPoints
         /// Saved top-left position of the on-screen Build Points window, in screen
         /// pixels. Stored in this save's persistent file alongside the balance.
         /// </summary>
-        public float DisplayX { get; private set; } = 260f;
+        public float DisplayX { get; private set; } = 500f;
         public float DisplayY { get; private set; } = 8f;
 
         public void SetDisplayPosition(float x, float y)
