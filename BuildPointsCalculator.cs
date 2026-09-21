@@ -150,9 +150,9 @@ namespace BuildPoints
 				// Mirror the launch-side per-part formula (see the method summary).
 				double partDryCost = pps.partInfo.cost + pps.moduleCosts;
 				// Prefab mass plus module mass modifiers, which is what the editor
-				// counts. pps.mass is deliberately not used: in flight it came out
-				// 0.09 t higher than launch counted for the same craft, so it isn't
-				// a like-for-like match with the editor's numbers.
+				// counts. pps.mass is deliberately not used: in flight it also includes
+				// crew mass (0.045 t for Jeb in testing), which the editor doesn't
+				// count, so it isn't a like-for-like match with launch.
 				double partDryMass = pps.partInfo.partPrefab.mass + pps.moduleMass;
 
 				if (pps.resources != null)
