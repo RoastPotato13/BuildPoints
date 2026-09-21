@@ -36,11 +36,15 @@ namespace BuildPoints
 	///              use. That means tweaked tank levels, part variants and
 	///              module cost/mass modifiers are all reflected, and the
 	///              cost window updates as the player changes resources.
-	///   Recovery — each ProtoPartSnapshot: the part's dry cost and mass come
-	///              from its AvailablePart template, and (only when
-	///              includeFuelInCost is on) its resources are added at the
-	///              amounts the vessel actually came back with. Part variants
-	///              and module modifiers are NOT captured on this path.
+	///   Recovery — each ProtoPartSnapshot, using the same per-part formula
+	///              stock applies for the launch charge (base cost + module
+	///              costs - resource value; prefab mass + module mass) with the
+	///              values the snapshot stored. Resources are added at the
+	///              amounts the vessel actually came back with, only when
+	///              includeFuelInCost is on. This keeps recovery consistent
+	///              with launch even when a part's live numbers differ from
+	///              its template (FAR wing mass, a parachute's module cost,
+	///              resources a mod adds at runtime, and so on).
 	/// </summary>
 	public static class BuildPointsCalculator
 	{
@@ -104,20 +108,22 @@ namespace BuildPoints
 		/// applied to a recovered vessel's ProtoVessel rather than a live editor
 		/// ShipConstruct — used to size the Build Points refund on recovery.
 		///
-		/// Dry cost/mass come from each part's AvailablePart template
-		/// (partInfo.partConfig). If Settings.includeFuelInCost is on, each
-		/// part's resources are added at the amounts stored in the
-		/// ProtoPartSnapshot, so a vessel that comes back with empty tanks is
+		/// Per part, this mirrors what ShipConstruct.GetShipCosts / GetShipMass
+		/// produce for the launch charge, from the values stored in the
+		/// ProtoPartSnapshot:
+		///   dry cost = partInfo.cost + moduleCosts
+		///              - (maxAmount x unitCost) of each resource
+		///   dry mass = prefab mass + moduleMass (not pps.mass, see the loop)
+		/// If Settings.includeFuelInCost is on, each resource is added back at
+		/// its current amount, so a vessel that comes back with empty tanks is
 		/// refunded for empty tanks, matching what launch charged for what was
-		/// actually loaded. Part variants and module cost/mass modifiers are not
-		/// captured here (the persisted snapshot isn't read for them), so a
-		/// variant surcharge is charged at launch but not refunded.
+		/// actually loaded.
 		///
 		/// NOTE: verify against 1.12.5:
-		///   ProtoPartSnapshot.partInfo, ProtoPartSnapshot.resources
-		///   (List&lt;ProtoPartResourceSnapshot&gt; with resourceName and amount),
-		///   and PartResourceLibrary.Instance.GetDefinition(string) with
-		///   PartResourceDefinition.unitCost / density.
+		///   ProtoPartSnapshot.partInfo / moduleMass / moduleCosts / resources
+		///   (List&lt;ProtoPartResourceSnapshot&gt; with resourceName, amount and
+		///   maxAmount), and PartResourceLibrary.Instance.GetDefinition(string)
+		///   with PartResourceDefinition.unitCost / density.
 		/// A part whose mod was removed since launch will have partInfo null;
 		/// such parts are skipped rather than failing the whole refund.
 		/// </summary>
@@ -141,14 +147,15 @@ namespace BuildPoints
 				if (pps?.partInfo == null) continue;
 				counted++;
 
-				// Dry portion from the part's template.
-				ShipConstruction.GetPartCostsAndMass(pps.partInfo.partConfig, pps.partInfo,
-					out float dryCost, out _, out float dryMass, out _);
-				totalCost += dryCost;
-				totalMass += dryMass;
+				// Mirror the launch-side per-part formula (see the method summary).
+				double partDryCost = pps.partInfo.cost + pps.moduleCosts;
+				// Prefab mass plus module mass modifiers, which is what the editor
+				// counts. pps.mass is deliberately not used: in flight it came out
+				// 0.09 t higher than launch counted for the same craft, so it isn't
+				// a like-for-like match with the editor's numbers.
+				double partDryMass = pps.partInfo.partPrefab.mass + pps.moduleMass;
 
-				// Resources at the levels the vessel actually has now.
-				if (settings.includeFuelInCost && pps.resources != null)
+				if (pps.resources != null)
 				{
 					foreach (ProtoPartResourceSnapshot res in pps.resources)
 					{
@@ -156,10 +163,20 @@ namespace BuildPoints
 						PartResourceDefinition def = PartResourceLibrary.Instance.GetDefinition(res.resourceName);
 						if (def == null) continue;
 
-						totalCost += res.amount * def.unitCost;
-						totalMass += res.amount * def.density;
+						// The value of a full load is not part of the dry cost.
+						partDryCost -= res.maxAmount * def.unitCost;
+
+						// Resources at the levels the vessel actually has now.
+						if (settings.includeFuelInCost)
+						{
+							totalCost += res.amount * def.unitCost;
+							totalMass += res.amount * def.density;
+						}
 					}
 				}
+
+				totalCost += partDryCost;
+				totalMass += partDryMass;
 			}
 
 			if (counted == 0) return false;
@@ -170,6 +187,7 @@ namespace BuildPoints
 			var breakdown = BuildBreakdown(settings, fundsCost, partCount, totalMass,
 				chargeLaunchOverhead: false);
 			bpCost = breakdown.total;
+
 			return true;
 		}
 
