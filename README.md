@@ -4,7 +4,7 @@ BuildPoints is an alternative construction time concept to Kerbal Construction T
 
 **How Does it Work?**
 
-BuildPoints works by adding an additional resource to the game called “BuildPoints” which are needed to build any new craft. You passively accrue BuildPoints over time. As long as you have enough build points at the time of your launch, everything will behave exactly the same as stock with the BuildPoints costs deducted from your total. I view this as your manufacturing team is working on “something” but you don’t have to decide what that “something” actually is until you are ready to launch. A bit less realistic, but more flexible to use. If you do not have enough BuildPoints available, a pop-up will allow you to automatically time warp until you do. The settings are fairly flexible for you to come up with the exact setup you prefer.
+BuildPoints works by adding an additional resource to the game called “BuildPoints” which are needed to build any new craft. You passively accrue BuildPoints over time. As long as you have enough build points at the time of your launch, everything will behave exactly the same as stock with the BuildPoints costs deducted from your total. I view this as your manufacturing team is working on “something” but you don’t have to decide what that “something” actually is until you are ready to launch. A bit less realistic, but more flexible to use. If you do not have enough BuildPoints available, a pop-up will allow you to automatically time warp until you do. The settings are fairly flexible for you to come up with the exact cost setup you prefer.
 
 **Screenshots**
 
