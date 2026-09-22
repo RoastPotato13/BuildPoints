@@ -40,10 +40,6 @@ VAB Auto Warp Function (After hitting launch): <br>
 
 - I'm not aware of any incompatibilities for now. I would avoid other construction time mods like KCT as they provide the same function.
 
-**Installation**
-
-- Download the "BuildPoints" folder contained within the "GameData" folder on Git into your GameData folder. I will work on getting this added to CKAN as well.
-
 **Notes**
 
 - As far as I can tell the release is stable to play. I am going to be testing for edge cases and to refine the settings I use. Feel free to leave feedback/issues you run into!
