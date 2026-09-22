@@ -23,7 +23,7 @@ Space Center Main Tab: <br>
 VAB Calculator: <br>
 ![alt text](https://github.com/RoastPotato13/BuildPoints/blob/master/My%20Files/VAB.png "VAB Calculator")
 
-VAB Auto Warp Function: <br>
+VAB Auto Warp Function (After hitting launch): <br>
 ![alt text](https://github.com/RoastPotato13/BuildPoints/blob/master/My%20Files/VAB_AutoWarp.png "Auto Warp")
 
 **Additional Settings Info**
