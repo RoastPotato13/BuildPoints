@@ -34,11 +34,11 @@ VAB Auto Warp Function: <br>
 
 **Dependencies**
 
--Harmony 2
+- Harmony 2
 
 **Incompatibilities**
 
--I'm not aware of any incompatibilities for now. I would avoid other construction time mods like KCT as they provide the same function.
+- I'm not aware of any incompatibilities for now. I would avoid other construction time mods like KCT as they provide the same function.
 
 **Notes**
 
