@@ -28,7 +28,7 @@ VAB Auto Warp Function (After hitting launch): <br>
 
 **Additional Settings Info**
 
-- There is a “StartingPoints” setting only editable in the GlobalSettings.cfg if you want to start with BuildPoints (The default is 0).
+- There is a “StartingPoints” setting only editable in the GlobalSettings.cfg if you want to start new saves with BuildPoints (The default is 0).
 - The default time warp method (unchecked) exits the VAB/SPH and time warps in the Space Center until there are enough BuildPoints to build the craft. This is the safest option. Checking the “instant time-skip” time warp method instead overwrites the current time in the persistent save file and accrues the corresponding BuildPoints before immediately launching. I’m not entirely sure if this won’t cause issues in stock, but my understanding is it should work unless you have mods which are tracking resources in the background. The benefit being you don’t have to deal with 2 extra scene switches and waiting for the time warp.
 - FYI The default time warp method does automatically save your current craft under the name "BuildPoints - continue here". I'm not sure it's necessary, but I left it for now.
 
