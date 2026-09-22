@@ -130,10 +130,6 @@ namespace BuildPoints
 
         private IEnumerator AddButtonWhenReady()
         {
-            // NOTE: ApplicationLauncher.Ready is the static "launcher is up"
-            // flag as far as I recall; verify it exists in 1.12.5.
-            // Also wait for the scenario, so the saved window state is loaded
-            // before we try to restore it.
             while (!ApplicationLauncher.Ready || ApplicationLauncher.Instance == null
                    || BuildPointsScenario.Instance == null)
                 yield return null;

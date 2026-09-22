@@ -96,7 +96,6 @@ namespace BuildPoints
 			double fundsCost = dryCost + (settings.includeFuelInCost ? fuelCost : 0f);
 			double massTonnes = dryMass + (settings.includeFuelInCost ? fuelMass : 0f);
 
-			// In TryGetShipCostBreakdown (launch / editor):
 			breakdown = BuildBreakdown(settings, fundsCost, partCount, massTonnes,
 				chargeLaunchOverhead: true);
 			return true;
@@ -119,11 +118,6 @@ namespace BuildPoints
 		/// refunded for empty tanks, matching what launch charged for what was
 		/// actually loaded.
 		///
-		/// NOTE: verify against 1.12.5:
-		///   ProtoPartSnapshot.partInfo / moduleMass / moduleCosts / resources
-		///   (List&lt;ProtoPartResourceSnapshot&gt; with resourceName, amount and
-		///   maxAmount), and PartResourceLibrary.Instance.GetDefinition(string)
-		///   with PartResourceDefinition.unitCost / density.
 		/// A part whose mod was removed since launch will have partInfo null;
 		/// such parts are skipped rather than failing the whole refund.
 		/// </summary>
@@ -183,7 +177,6 @@ namespace BuildPoints
 
 			fundsCost = totalCost;
 
-			// In TryGetRecoveredVesselCost (recovery):
 			var breakdown = BuildBreakdown(settings, fundsCost, partCount, totalMass,
 				chargeLaunchOverhead: false);
 			bpCost = breakdown.total;

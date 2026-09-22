@@ -256,10 +256,7 @@ namespace BuildPoints
         /// (JNSQ, RSS, etc.) where the homeworld's rotation period differs
         /// from stock.
         ///
-        /// NOTE: verify solarDayLength against your KSP version — it's the
-        /// stock CelestialBody property that drives the day-length used in
-        /// the UI's date formatter, and accounts for orbital motion (solar
-        /// vs. sidereal day), which is what a "day" means to the player.
+        /// NOTE: solarDayLength
         /// Falls back to sidereal rotationPeriod, then to a flat 6h, for
         /// edge cases (e.g. a tidally-locked homeworld, where solar day is
         /// undefined/infinite).

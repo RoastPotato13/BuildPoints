@@ -12,9 +12,6 @@ namespace BuildPoints
 	/// (right-clicking a landed/splashed vessel near the Space Center), so
 	/// both are covered without extra hooks.
 	///
-	/// NOTE: verify GameEvents.onVesselRecovered's signature against your
-	/// KSP version — it's EventData&lt;ProtoVessel, bool&gt; as of 1.12.x,
-	/// with the bool indicating a "quick" recovery.
 	/// </summary>
 	[KSPAddon(KSPAddon.Startup.EveryScene, true)]
 	public class BuildPointsRecoveryHandler : MonoBehaviour

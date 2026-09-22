@@ -30,11 +30,6 @@ namespace BuildPoints
     /// that currency for that upgrade (otherwise it would be free and
     /// unlimited).
     ///
-    /// NOTE: verify against 1.12.5: Funding.Instance.Funds (double),
-    /// Funding.AddFunds(double, TransactionReasons),
-    /// ResearchAndDevelopment.Instance.Science (float) and
-    /// ResearchAndDevelopment.AddScience(float, TransactionReasons). Stock uses
-    /// AddFunds/AddScience with negative values for its own spending.
     /// </summary>
     public static class BuildPointsUpgrades
     {

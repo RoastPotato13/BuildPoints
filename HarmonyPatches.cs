@@ -53,7 +53,6 @@ namespace BuildPoints
     {
         public static bool Prefix()
         {
-            Debug.Log("[BuildPoints] launchVessel(string) prefix fired");
 
             if (!BuildPointsScenario.IsActiveForCurrentGame()) return true;
 
@@ -180,7 +179,6 @@ namespace BuildPoints
     {
         public static void Prefix()
         {
-            Debug.Log("[BuildPoints] proceedWithVesselLaunch prefix fired");
 
             // Any previously tracked launch is superseded by this one.
             LaunchRevertTracker.Clear();
@@ -262,8 +260,6 @@ namespace BuildPoints
     /// Prepare() skips this patch (with a log line) if the target method
     /// isn't found, so a wrong name here can't take the other patches down.
     ///
-    /// NOTE: verify FlightDriver.RevertToPrelaunch(EditorFacility) and
-    /// FlightDriver.CanRevertToPrelaunch against 1.12.5.
     /// </summary>
     [HarmonyPatch(typeof(FlightDriver), "RevertToPrelaunch", new Type[] { typeof(EditorFacility) })]
     public static class RevertToEditorPatch

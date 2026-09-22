@@ -132,10 +132,6 @@ namespace BuildPoints
             node.AddValue("showBuildPointsDisplay", showBuildPointsDisplay);
         }
 
-        // NOTE: verify ConfigNode.TryGetValue(string, ref float/bool) against
-        // your KSP version — BuildPointsScenario already relies on the same
-        // overload for double (currentPoints/lastAccrualUT), so these should
-        // exist alongside it, but confirm float/bool specifically compile.
         private static void ReadFloat(ConfigNode node, string key, ref float value)
         {
             float parsed = value;
