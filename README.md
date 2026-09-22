@@ -28,7 +28,11 @@ VAB Auto Warp Function: <br>
 
 **Additional Settings Info**
 
-**Additional Settings Info**
-
 - There is a “StartingPoints” setting only editable in the GlobalSettings.cfg if you want to start with BuildPoints (The default is 0).
 - The default time warp method (unchecked) exits the VAB/SPH and time warps in the Space Center until there are enough BuildPoints to build the craft. This is the safest option. Checking the “instant time-skip” time warp method instead overwrites the current time in the persistent save file and accrues the corresponding BuildPoints before immediately launching. I’m not entirely sure if this won’t cause issues in stock, but my understanding is it should work unless you have mods which are tracking resources in the background. The benefit being you don’t have to deal with 2 extra scene switches and waiting for the time warp.
+
+**Notes**
+
+- This release should be stable to play. I am going to be testing for edge cases and to refine the settings I use. Feel free to leave feedback/issues you run into!
+- This is my first mod, so hopefully there aren’t too many kinks.
+- I did use Claude to help write the code.
