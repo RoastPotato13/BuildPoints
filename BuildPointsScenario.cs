@@ -205,9 +205,6 @@ namespace BuildPoints
         /// it's multiplied back out by the facility's level count to get
         /// whole upgrade steps.
         ///
-        /// NOTE: verify ScenarioUpgradeableFacilities.GetFacilityLevelCount(SpaceCenterFacility)
-        /// against 1.12.5 — it should return the facility's max level index
-        /// (2 for a stock 3-tier building).
         /// </summary>
         public static void GetFacilityUpgradeCounts(out int vabUpgrades, out int sphUpgrades)
         {

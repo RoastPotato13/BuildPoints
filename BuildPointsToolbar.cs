@@ -117,7 +117,6 @@ namespace BuildPoints
 
             GameScenes scene = HighLogic.LoadedScene;
             relevantScene = scene == GameScenes.SPACECENTER || scene == GameScenes.EDITOR;
-            Debug.Log($"[BuildPoints] Toolbar Awake, scene={scene}, id={GetInstanceID()}");
             if (!relevantScene) return;
 
             StartCoroutine(AddButtonWhenReady());
@@ -143,8 +142,6 @@ namespace BuildPoints
         {
             if (!relevantScene || ApplicationLauncher.Instance == null) return;
 
-            Debug.Log($"[BuildPoints] Toolbar AddButton, id={GetInstanceID()}");
-
             // Only ever one button: clear any left over from another instance
             // before adding ours.
             if (sharedButton != null)
@@ -155,7 +152,6 @@ namespace BuildPoints
             button = null;
             showWindow = false;
 
-            // NOTE: Texture created by Claude...Update if you want something prettier
             Texture2D icon = LoadIcon();
 
             ApplicationLauncher.AppScenes scenes = HighLogic.LoadedScene == GameScenes.SPACECENTER
@@ -210,8 +206,6 @@ namespace BuildPoints
             selectedTab = Mathf.Clamp(scenario.SpaceCenterTab, 0, TabNames.Length - 1);
         }
 
-        // NOTE: verify EditorDriver.editorFacility against 1.12.5 — it should be
-        // the static EditorFacility (VAB or SPH) of the editor currently loaded.
         private static BuildPointsWindowState GetEditorWindowState()
         {
             var scenario = BuildPointsScenario.Instance;
